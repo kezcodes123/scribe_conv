@@ -39,6 +39,29 @@ TEST_MODE = os.environ.get("PAYWALL_TEST_MODE", "0").lower() in ("1", "true", "y
 import secrets
 
 
+def _validate_production_config():
+    """Validate required configuration for production mode"""
+    if not TEST_MODE:
+        missing_config = []
+        if not STRIPE_SECRET:
+            missing_config.append("STRIPE_SECRET_KEY")
+        if not STRIPE_PRICE_ID:
+            missing_config.append("STRIPE_PRICE_ID")
+        if not STRIPE_WEBHOOK_SECRET:
+            missing_config.append("STRIPE_WEBHOOK_SECRET")
+        if not stripe:
+            missing_config.append("stripe library")
+        
+        if missing_config:
+            import sys
+            print(f"WARNING: Production mode requires: {', '.join(missing_config)}", file=sys.stderr)
+            print("Conversion endpoints will return 503 Service Unavailable", file=sys.stderr)
+
+
+# Validate configuration on startup
+_validate_production_config()
+
+
 def _ensure_csrf_token() -> str:
     token = session.get("csrf_token")
     if not token:
@@ -52,6 +75,38 @@ def _require_csrf():
     form_token = request.form.get("csrf_token", "")
     if not token or not form_token or not secrets.compare_digest(token, form_token):
         abort(403)
+
+
+def _require_active_subscription():
+    """Ensure user has an active subscription. For POST requests, returns 402 Payment Required.
+    For GET requests, redirects to pricing page."""
+    if TEST_MODE:
+        # In test mode, auto-activate a dummy subscription for the session
+        if not session.get("customer_id"):
+            session["customer_id"] = "test_customer"
+        # Ensure DB has an active row with a long-lived period end
+        try:
+            set_subscription("test_customer", "test@example.com", "active", int(time.time()) + 3600 * 24 * 365 * 10)
+        except Exception:
+            pass
+        return True
+    
+    # In production mode, check Stripe configuration
+    if not (stripe and STRIPE_SECRET and STRIPE_PRICE_ID):
+        if request.method == "POST":
+            return ("Service temporarily unavailable - payment system not configured.", 503)
+        else:
+            return ("Service temporarily unavailable - payment system not configured.", 503)
+    
+    customer_id = session.get("customer_id")
+    if not customer_id or not is_active(customer_id):
+        if request.method == "POST":
+            # For POST requests (file processing), return 402 Payment Required
+            return ("Payment Required: Please subscribe to use conversion features.", 402)
+        else:
+            # For GET requests, redirect to pricing
+            return redirect(url_for("pricing"))
+    return True
 
 
 @app.after_request
@@ -81,20 +136,12 @@ def favicon() -> Response:
 @app.route("/", methods=["GET", "POST"])
 def index():
     _ensure_csrf_token()
-    # Simple session-based customer tracking; in real apps, use auth/login
-    if TEST_MODE:
-        # In test mode, auto-activate a dummy subscription for the session
-        if not session.get("customer_id"):
-            session["customer_id"] = "test_customer"
-        # Ensure DB has an active row with a long-lived period end
-        try:
-            set_subscription("test_customer", "test@example.com", "active", int(time.time()) + 3600 * 24 * 365 * 10)
-        except Exception:
-            pass
-    else:
-        customer_id = session.get("customer_id")
-        if not customer_id or not is_active(customer_id):
-            return redirect(url_for("pricing"))
+    
+    # Enforce subscription requirement for both GET and POST
+    subscription_check = _require_active_subscription()
+    if subscription_check is not True:
+        return subscription_check
+    
     if request.method == "POST":
         _require_csrf()
         file = request.files.get("pdf")
