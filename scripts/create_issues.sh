@@ -25,7 +25,7 @@ fi
 for L in ui enhancement epub pdf performance security accessibility paywall docs devops bug; do
   gh label create "$L" -R "$REPO" >/dev/null 2>&1 || true
   echo "Label ensured: $L"
-end
+done
 
 # Create milestones (idempotent)
 create_ms() {
