@@ -1,0 +1,211 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Kindle Scribe PDF Optimizer</title>
+  <style>
+    :root {
+      --bg: #fafafa; --fg: #111; --muted: #666; --border: #e5e5e5; --brand: #111; --accent: #0a84ff;
+    }
+    body { font-family: system-ui,-apple-system,Segoe UI,Roboto,sans-serif; margin: 0; color: var(--fg); background: var(--bg); }
+  header { padding: 12px 0; border-bottom: 1px solid var(--border); background: #fff; }
+  .container { max-width: 920px; margin: 0 auto; padding: 0 16px; }
+  .topbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  h1 { font-size: 20px; margin: 0; }
+  nav a { color: var(--fg); text-decoration: none; margin-left: 14px; font-weight: 600; }
+  nav a:hover { color: var(--accent); }
+  .badge { display: inline-block; font-size: 12px; padding: 3px 8px; border-radius: 999px; background: #eef6ff; color: #0366d6; margin-left: 8px; border: 1px solid #cde3ff; }
+    .card { background: #fff; border: 1px solid var(--border); border-radius: 12px; padding: 20px 24px; margin: 20px auto; }
+    label { display: block; margin: 10px 0 6px; font-weight: 600; }
+    input[type="text"], input[type="number"], select, input[type="file"] { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 8px; }
+    .row { display: flex; gap: 12px; flex-wrap: wrap; }
+    .row > div { flex: 1 1 200px; }
+    .checkboxes { display: flex; gap: 18px; flex-wrap: wrap; margin: 12px 0; }
+    .actions { margin-top: 18px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+    button { padding: 10px 16px; border: 0; background: var(--brand); color: #fff; border-radius: 10px; cursor: pointer; }
+    .subtle { color: var(--muted); font-size: 13px; }
+    .msg { color: #b00; margin-top: 10px; }
+    details { border: 1px dashed var(--border); padding: 10px 12px; border-radius: 8px; background: #fcfcfc; }
+    details > summary { cursor: pointer; font-weight: 600; }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="container">
+      <div class="topbar">
+        <div>
+          <h1>Kindle Scribe PDF Optimizer {% if test_mode %}<span class="badge" title="Bypass enabled">Test mode</span>{% endif %}</h1>
+        </div>
+        <nav>
+          <a href="{{ url_for('index') }}">Home</a>
+          <a href="{{ url_for('pricing') }}">Pricing</a>
+        </nav>
+      </div>
+    </div>
+  </header>
+  <div class="container">
+    <div class="card">
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          {% for category, message in messages %}
+            <div class="msg">{{ message }}</div>
+          {% endfor %}
+        {% endif %}
+      {% endwith %}
+
+      <form method="post" enctype="multipart/form-data">
+        <input type="hidden" name="csrf_token" value="{{ session.csrf_token }}">
+        <label for="pdf">PDF file</label>
+        <input id="pdf" name="pdf" type="file" accept="application/pdf" required>
+
+        <div class="row">
+          <div>
+            <label for="page_size">Page size</label>
+            <select id="page_size" name="page_size">
+              <option value="scribe" selected>Scribe</option>
+              <option value="a5">A5</option>
+              <option value="source">Source</option>
+              <option value="custom">Custom</option>
+            </select>
+          </div>
+          <div>
+            <label for="margin_pt">Margin (pt)</label>
+            <input id="margin_pt" name="margin_pt" type="number" value="14" min="0" max="200">
+          </div>
+          <div>
+            <label for="dpi">DPI (fallback)</label>
+            <input id="dpi" name="dpi" type="number" value="300" min="72" max="600" step="12">
+          </div>
+        </div>
+
+        <div class="row">
+          <div>
+            <label for="custom_width_pt">Custom width (pt)</label>
+            <input id="custom_width_pt" name="custom_width_pt" type="number" min="100" max="5000" step="1" placeholder="e.g., 446">
+          </div>
+          <div>
+            <label for="custom_height_pt">Custom height (pt)</label>
+            <input id="custom_height_pt" name="custom_height_pt" type="number" min="100" max="5000" step="1" placeholder="e.g., 595">
+          </div>
+          <div>
+            <label for="fit">Fit mode</label>
+            <select id="fit" name="fit">
+              <option value="contain" selected>Contain</option>
+              <option value="fit_width">Fit width</option>
+              <option value="fit_height">Fit height</option>
+              <option value="stretch">Stretch</option>
+            </select>
+          </div>
+        </div>
+
+        <details>
+          <summary>Advanced options</summary>
+          <div class="row">
+            <div>
+              <label for="margin_top_pt">Top margin (pt)</label>
+              <input id="margin_top_pt" name="margin_top_pt" type="number" min="0" max="400" step="1" placeholder="auto">
+            </div>
+            <div>
+              <label for="margin_right_pt">Right margin (pt)</label>
+              <input id="margin_right_pt" name="margin_right_pt" type="number" min="0" max="400" step="1" placeholder="auto">
+            </div>
+            <div>
+              <label for="margin_bottom_pt">Bottom margin (pt)</label>
+              <input id="margin_bottom_pt" name="margin_bottom_pt" type="number" min="0" max="400" step="1" placeholder="auto">
+            </div>
+            <div>
+              <label for="margin_left_pt">Left margin (pt)</label>
+              <input id="margin_left_pt" name="margin_left_pt" type="number" min="0" max="400" step="1" placeholder="auto">
+            </div>
+          </div>
+
+          <div class="checkboxes">
+            <label><input type="checkbox" name="crop" checked> Crop margins</label>
+            <label><input type="checkbox" name="autocontrast" checked> Auto-contrast</label>
+          </div>
+
+          <div class="row">
+            <div>
+              <label for="crop_threshold">Crop threshold (0–255)</label>
+              <input id="crop_threshold" name="crop_threshold" type="number" value="245" min="0" max="255">
+            </div>
+            <div>
+              <label for="crop_pad">Crop padding (px at render DPI)</label>
+              <input id="crop_pad" name="crop_pad" type="number" value="10" min="0" max="400">
+            </div>
+            <div>
+              <label for="autocontrast_cutoff">Auto-contrast cutoff (%)</label>
+              <input id="autocontrast_cutoff" name="autocontrast_cutoff" type="number" value="1" min="0" max="10">
+            </div>
+          </div>
+
+          <div class="checkboxes">
+            <label><input type="checkbox" name="sharpen"> Sharpen</label>
+            <label><input type="checkbox" name="bilevel"> Bilevel (black/white)</label>
+            <label><input type="checkbox" name="no_dither"> No dither</label>
+            <label><input type="checkbox" name="rotate_landscape"> Rotate landscape pages</label>
+          </div>
+
+          <div class="row">
+            <div>
+              <label>EPUB rendering</label>
+              <div class="checkboxes">
+                <label><input type="checkbox" name="epub_bilevel"> EPUB bilevel (black/white)</label>
+                <label><input type="checkbox" name="epub_no_dither"> EPUB: no dither</label>
+              </div>
+            </div>
+          </div>
+
+          <div class="row">
+            <div>
+              <label for="gs_quality">Ghostscript quality</label>
+              <select id="gs_quality" name="gs_quality">
+                <option value="prepress" selected>prepress (best)</option>
+                <option value="printer">printer</option>
+                <option value="ebook">ebook</option>
+                <option value="screen">screen (smallest)</option>
+                <option value="default">default</option>
+              </select>
+            </div>
+            <div>
+              <label>&nbsp;</label>
+              <div class="checkboxes">
+                <label><input type="checkbox" name="force_gs"> Force Ghostscript</label>
+                <label><input type="checkbox" name="force_raster"> Force raster</label>
+              </div>
+            </div>
+          </div>
+        </details>
+
+        <label for="output_name">Output name (optional)</label>
+        <input id="output_name" name="output_name" type="text" placeholder="e.g., MyBook_Scribe">
+
+        <label>Output</label>
+        <div class="checkboxes">
+          <label><input type="radio" name="output" value="pdf" checked> PDF</label>
+          <label><input type="radio" name="output" value="epub"> EPUB</label>
+          <label><input type="radio" name="output" value="both"> Both</label>
+        </div>
+
+        <div class="actions">
+          <button type="submit">Optimize</button>
+          <span class="subtle">PDF keeps layout; EPUB adds a table of contents and per-page chapters.</span>
+        </div>
+      </form>
+    </div>
+  </div>
+  <script>
+    const ps = document.getElementById('page_size');
+    const cw = document.getElementById('custom_width_pt');
+    const ch = document.getElementById('custom_height_pt');
+    function toggleCustom(){
+      const isCustom = ps.value === 'custom';
+      cw.disabled = ch.disabled = !isCustom;
+      cw.closest('div').style.opacity = ch.closest('div').style.opacity = isCustom ? 1 : 0.5;
+    }
+    ps.addEventListener('change', toggleCustom);
+    toggleCustom();
+  </script>
+</body>
+</html>

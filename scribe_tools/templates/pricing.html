@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Pricing · Kindle Scribe PDF Optimizer</title>
+  <style>
+    :root { --bg:#fafafa; --fg:#111; --muted:#666; --border:#e5e5e5; --brand:#111; --accent:#0a84ff; }
+    body { font-family: system-ui,-apple-system,Segoe UI,Roboto,sans-serif; margin:0; color:var(--fg); background:var(--bg); }
+    header { padding: 12px 0; border-bottom: 1px solid var(--border); background:#fff; }
+    .container { max-width: 920px; margin: 0 auto; padding: 0 16px; }
+    .topbar { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+    h1 { font-size: 20px; margin: 0; }
+    nav a { color: var(--fg); text-decoration: none; margin-left: 14px; font-weight: 600; }
+    nav a:hover { color: var(--accent); }
+    .badge { display:inline-block; font-size:12px; padding:3px 8px; border-radius:999px; background:#eef6ff; color:#0366d6; margin-left:8px; border:1px solid #cde3ff; }
+
+    .card { background:#fff; border:1px solid var(--border); border-radius:12px; padding:20px 24px; margin: 20px auto; }
+    .price { font-size: 28px; font-weight: 800; }
+    .muted { color: var(--muted); }
+    button { padding: 10px 16px; border: 0; background: var(--brand); color:#fff; border-radius:10px; cursor:pointer; }
+    .note { margin-top: 10px; font-size: 13px; color: var(--muted); }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="container">
+      <div class="topbar">
+        <div>
+          <h1>Kindle Scribe PDF Optimizer {% if test_mode %}<span class="badge" title="Bypass enabled">Test mode</span>{% endif %}</h1>
+        </div>
+        <nav>
+          <a href="{{ url_for('index') }}">Home</a>
+          <a href="{{ url_for('pricing') }}">Pricing</a>
+        </nav>
+      </div>
+    </div>
+  </header>
+
+  <div class="container">
+    <div class="card">
+      <h2>Simple pricing</h2>
+      <p class="muted">Unlimited conversions, priority improvements.</p>
+      <p class="price">{{ price_label }}</p>
+
+      {% if test_mode %}
+        <form action="{{ url_for('test_activate') }}" method="post">
+          <input type="hidden" name="csrf_token" value="{{ session.csrf_token }}">
+          <button>Continue in test mode</button>
+        </form>
+        <p class="note">Test mode is enabled. You won’t be charged.</p>
+      {% else %}
+        <form action="{{ url_for('create_checkout_session') }}" method="post">
+          <input type="hidden" name="csrf_token" value="{{ session.csrf_token }}">
+          <button>Subscribe</button>
+        </form>
+        <p class="note">You’ll be redirected to Stripe Checkout to complete your subscription.</p>
+      {% endif %}
+    </div>
+  </div>
+</body>
+</html>

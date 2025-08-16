@@ -1,0 +1,45 @@
+# macOS
+.DS_Store
+
+# Python
+__pycache__/
+*.py[cod]
+*.so
+.venv/
+venv/
+env/
+*.egg-info/
+.build/
+build/
+dist/
+.pytest_cache/
+.mypy_cache/
+.coverage
+.cache/
+
+# IDE/Editor
+.vscode/
+.idea/
+
+# Env & secrets
+.env
+.env.*
+*.key
+*.pem
+
+# App artifacts
+paywall.db
+instance/
+logs/
+*.log
+tmp/
+uploads/
+
+# Generated outputs
+*.pdf
+*.epub
+*.mobi
+*.azw3
+
+# Node (if any)
+node_modules/
